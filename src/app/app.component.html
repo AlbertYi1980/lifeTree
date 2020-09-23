@@ -1,8 +1,8 @@
-<div>
-  <div>
+<div style="position: relative; height: 100%;"   >
+  <div style="position: absolute">
     <button (click)="go()">click me</button>
   </div>
 
-  <canvas  style="border: solid 1px black " width=1600 height=800  #container
-           (mousedown)="mouseDown($event)" (mouseup)="mouseUp($event)" (mousemove)="mouseMove($event)"></canvas>
+  <canvas  style="height: 100%; width: 100%"  #container
+           (mousedown)="mouseDown($event)" (mouseup)="mouseUp($event)" (mousemove)="mouseMove($event)" (resize)="onResize()"></canvas>
 </div>
