@@ -5,6 +5,8 @@ import {$e} from "codelyzer/angular/styles/chars";
 
 
 
+
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -15,9 +17,7 @@ export class AppComponent {
 
   @ViewChild("container", {static: true})
   container: ElementRef;
-  private get context(): CanvasRenderingContext2D {
-    return this.canvas.getContext('2d');
-  }
+  private  context: CanvasRenderingContext2D ;
   private get width(): number{
     return  this.canvas.width;
   };
@@ -28,19 +28,24 @@ export class AppComponent {
 
   ngOnInit() {
     this.canvas = this.container.nativeElement;
+    this.context = this.canvas.getContext('2d');
     this.resizeCanvasToDisplaySize(this.canvas);
   }
 
-
-
-  private count = 0;
+  private basicMatrix : DOMMatrixReadOnly = new DOMMatrixReadOnly();
 
   go() {
+    let eye : DOMMatrixReadOnly =   new DOMMatrixReadOnly();
 
-    this.clear();
+    // let t =  eye.translate(100, 100);
+    // let r = eye.rotateFromVector(1, 1);
+    //
+    //  this.context.setTransform(t.multiply(r));
+    // this.context.setTransform(r.multiply(t));
 
-    this.context.translate(10 * (this.count++), 0)
-    this.draw();
+    console.log(this.context.getTransform())
+
+    this.drawCrossing();
 
   }
 
@@ -51,6 +56,26 @@ export class AppComponent {
     this.context.restore();
   }
 
+  private drawCrossing(){
+    this.clear();
+    this.context.setTransform(this.basicMatrix);
+
+    this.context.save();
+    this.context.lineWidth = 5;
+    this.context.strokeStyle = 'lime';
+    this.context.beginPath();
+    this.context.moveTo(-100, 0);
+    this.context.lineTo(100, 0);
+    this.context.stroke();
+    this.context.closePath()
+    this.context.beginPath()
+    this.context.strokeStyle = 'red';
+    this.context.moveTo(0, -100);
+    this.context.lineTo(0, 100);
+    this.context.stroke();
+    this.context.closePath();
+    this.context.restore();
+  }
 
   private draw() {
     this.context.save();
@@ -88,14 +113,16 @@ export class AppComponent {
   private dragging:boolean = false;
   private _startX = 0;
   private _startY = 0;
+  private _startBasicMatrix = null;
 
   mouseDown($event: MouseEvent) {
 
     this.dragging = true;
     this._startX = $event.offsetX;
     this._startY = $event.offsetY;
+    this._startBasicMatrix = this.basicMatrix;
     this.canvas.setPointerCapture(1);
-    console.log('down')
+
   }
 
   mouseUp($event: MouseEvent) {
@@ -108,14 +135,23 @@ export class AppComponent {
     if (this.dragging){
       let deltaX = $event.offsetX - this._startX;
       let deltaY = $event.offsetY - this._startY;
-      this.context.resetTransform();
-      this.context.translate(deltaX, deltaY);
-      this.clear();
-      this.draw();
+      this.basicMatrix = this._startBasicMatrix.translate(deltaX, deltaY);
+      this.drawCrossing();
     }
   }
 
+  mouseWheel($event: WheelEvent) {
+    let scale = $event.deltaY < 0 ? 1.1 : 1 / 1.1;
 
+    let inv = this.basicMatrix.inverse();
+     let t =  new DOMMatrixReadOnly().translate($event.offsetX, $event.offsetY);
+     let m = inv.multiply(t);
+    this.basicMatrix =   this.basicMatrix.translate(-m.e, -m.f);
+    console.log(this.basicMatrix)
+    this.drawCrossing();
+   console.log({ x : m.e, y: m.f})
+    console.log({ ox : $event.offsetX, oy: $event.offsetY})
+  }
 
   onResize() {
     console.log('resize')
@@ -130,6 +166,8 @@ export class AppComponent {
       canvas.height = height;
     }
   }
+
+
 }
 
 
