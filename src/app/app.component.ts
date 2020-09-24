@@ -35,7 +35,9 @@ export class AppComponent {
   private basicMatrix : DOMMatrixReadOnly = new DOMMatrixReadOnly();
 
   go() {
+
     let eye : DOMMatrixReadOnly =   new DOMMatrixReadOnly();
+    this.basicMatrix = this.basicMatrix.scale(2);
 
     // let t =  eye.translate(100, 100);
     // let r = eye.rotateFromVector(1, 1);
@@ -113,14 +115,14 @@ export class AppComponent {
   private dragging:boolean = false;
   private _startX = 0;
   private _startY = 0;
-  private _startBasicMatrix = null;
+
 
   mouseDown($event: MouseEvent) {
 
     this.dragging = true;
     this._startX = $event.offsetX;
     this._startY = $event.offsetY;
-    this._startBasicMatrix = this.basicMatrix;
+
     this.canvas.setPointerCapture(1);
 
   }
@@ -135,8 +137,13 @@ export class AppComponent {
     if (this.dragging){
       let deltaX = $event.offsetX - this._startX;
       let deltaY = $event.offsetY - this._startY;
-      this.basicMatrix = this._startBasicMatrix.translate(deltaX, deltaY);
+
+      this.basicMatrix =  new DOMMatrixReadOnly().translate(deltaX, deltaY).multiply( this.basicMatrix);
+
       this.drawCrossing();
+
+      this._startX = $event.offsetX;
+      this._startY = $event.offsetY;
     }
   }
 
@@ -146,11 +153,11 @@ export class AppComponent {
     let inv = this.basicMatrix.inverse();
      let t =  new DOMMatrixReadOnly().translate($event.offsetX, $event.offsetY);
      let m = inv.multiply(t);
-    this.basicMatrix =   this.basicMatrix.translate(-m.e, -m.f);
-    console.log(this.basicMatrix)
+    this.basicMatrix =   this.basicMatrix.translate(m.e, m.f).scale(scale).translate(-m.e , -m.f);
+    // console.log(this.basicMatrix)
     this.drawCrossing();
-   console.log({ x : m.e, y: m.f})
-    console.log({ ox : $event.offsetX, oy: $event.offsetY})
+   // console.log({ x : m.e, y: m.f})
+   //  console.log({ ox : $event.offsetX, oy: $event.offsetY})
   }
 
   onResize() {
