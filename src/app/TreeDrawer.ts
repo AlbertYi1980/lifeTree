@@ -29,6 +29,9 @@ export class TreeDrawer {
     this._s = options.s;
     this._maxDepth = options.maxDepth;
     this._w = options.w;
+    window.requestAnimationFrame(a =>{
+
+    })
   }
 
   draw(root: Node) {

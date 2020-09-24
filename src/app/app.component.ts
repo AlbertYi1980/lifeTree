@@ -1,7 +1,7 @@
 import {Component, ElementRef, ViewChild} from '@angular/core';
 import {parse} from "./NewickParser";
 import {TreeDrawer} from "./TreeDrawer";
-import {$e} from "codelyzer/angular/styles/chars";
+
 
 
 
@@ -17,7 +17,9 @@ export class AppComponent {
 
   @ViewChild("container", {static: true})
   container: ElementRef;
-  private  context: CanvasRenderingContext2D ;
+  private  get context(): CanvasRenderingContext2D {
+    return  this.canvas.getContext('2d');
+  }
   private get width(): number{
     return  this.canvas.width;
   };
@@ -28,28 +30,20 @@ export class AppComponent {
 
   ngOnInit() {
     this.canvas = this.container.nativeElement;
-    this.context = this.canvas.getContext('2d');
     this.resizeCanvasToDisplaySize(this.canvas);
+    this.loopRender();
+  }
+
+  private loopRender(){
+    window.requestAnimationFrame(time => {
+      this.draw();
+      this.loopRender();
+    });
   }
 
   private basicMatrix : DOMMatrixReadOnly = new DOMMatrixReadOnly();
 
-  go() {
 
-    let eye : DOMMatrixReadOnly =   new DOMMatrixReadOnly();
-    this.basicMatrix = this.basicMatrix.scale(2);
-
-    // let t =  eye.translate(100, 100);
-    // let r = eye.rotateFromVector(1, 1);
-    //
-    //  this.context.setTransform(t.multiply(r));
-    // this.context.setTransform(r.multiply(t));
-
-    console.log(this.context.getTransform())
-
-    this.drawCrossing();
-
-  }
 
   private clear(){
     this.context.save();
@@ -80,8 +74,10 @@ export class AppComponent {
   }
 
   private draw() {
+    this.clear();
+    this.context.setTransform(this.basicMatrix);
     this.context.save();
-    this.context.translate(this.width / 2, this.height / 2);
+
     this.context.strokeStyle = '#8b8b8b'
     const data = (parse(this.getData()))[0];
 
@@ -113,56 +109,59 @@ export class AppComponent {
   }
 
   private dragging:boolean = false;
-  private _startX = 0;
-  private _startY = 0;
+  private _preX = 0;
+  private _preY = 0;
 
 
   mouseDown($event: MouseEvent) {
 
     this.dragging = true;
-    this._startX = $event.offsetX;
-    this._startY = $event.offsetY;
-
+    this._preX = $event.offsetX;
+    this._preY = $event.offsetY;
     this.canvas.setPointerCapture(1);
-
   }
 
   mouseUp($event: MouseEvent) {
     this.dragging = false;
     this.canvas.setPointerCapture(1);
-    console.log('up')
   }
 
   mouseMove($event: MouseEvent) {
     if (this.dragging){
-      let deltaX = $event.offsetX - this._startX;
-      let deltaY = $event.offsetY - this._startY;
+      let deltaX = $event.offsetX - this._preX;
+      let deltaY = $event.offsetY - this._preY;
 
-      this.basicMatrix =  new DOMMatrixReadOnly().translate(deltaX, deltaY).multiply( this.basicMatrix);
+      let t = new DOMMatrixReadOnly().translate(deltaX, deltaY);
+      this.basicMatrix =  t.multiply( this.basicMatrix);
 
-      this.drawCrossing();
 
-      this._startX = $event.offsetX;
-      this._startY = $event.offsetY;
+
+      this._preX = $event.offsetX;
+      this._preY = $event.offsetY;
     }
   }
 
   mouseWheel($event: WheelEvent) {
-    let scale = $event.deltaY < 0 ? 1.1 : 1 / 1.1;
+    let t: DOMMatrix;
+    if ($event.shiftKey){
+      let angle = $event.deltaY < 0 ? +10 : -10;
+      t = new DOMMatrixReadOnly()
+        .translate($event.offsetX, $event.offsetY)
+        .rotate(0, 0, angle)
+        .translate(-$event.offsetX, -$event.offsetY);
+    }
+    else {
+      let scale = $event.deltaY < 0 ? 1.1 : 1 / 1.1;
+      t = new DOMMatrixReadOnly().scale(scale, scale, 0, $event.offsetX, $event.offsetY, 0);
+    }
+    this.basicMatrix =  t.multiply( this.basicMatrix);
 
-    let inv = this.basicMatrix.inverse();
-     let t =  new DOMMatrixReadOnly().translate($event.offsetX, $event.offsetY);
-     let m = inv.multiply(t);
-    this.basicMatrix =   this.basicMatrix.translate(m.e, m.f).scale(scale).translate(-m.e , -m.f);
-    // console.log(this.basicMatrix)
-    this.drawCrossing();
-   // console.log({ x : m.e, y: m.f})
-   //  console.log({ ox : $event.offsetX, oy: $event.offsetY})
+
   }
 
   onResize() {
-    console.log('resize')
     this.resizeCanvasToDisplaySize(this.canvas);
+
   }
 
   private resizeCanvasToDisplaySize(canvas) {
