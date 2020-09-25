@@ -80,7 +80,7 @@ export class TreeDrawer {
     if (node.isLeaf) {
       return;
     }
-    if (r < 1) return;
+    if (node.depth > 5) return;
 
     this._context.save();
     const pnr = this.drawSteps(r, clockwise);
